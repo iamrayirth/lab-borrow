@@ -52,9 +52,138 @@ lab-borrow/
 └── .env.example
 ```
 
+## Quickstart for beginners
+
+This section assumes no prior experience with this project — just a terminal and a bit of patience. If you
+already know your way around Node/Docker projects, the condensed version is in [Getting started](#getting-started)
+below.
+
+### 1. Install the prerequisites
+
+You need three things on your computer:
+
+1. **Node.js** version 20 or newer — [download here](https://nodejs.org) (the installer includes `npm`).
+   Check it worked: `node -v` should print `v20.x.x` or higher.
+2. **Docker Desktop** — [download here](https://www.docker.com/products/docker-desktop/). This runs the
+   PostgreSQL database for you in a container, so you don't have to install Postgres by hand. Make sure it's
+   actually running (open the app) before continuing.
+3. **Git** — usually already installed. Check with `git --version`.
+
+### 2. Get the code and install dependencies
+
+```bash
+git clone <repo-url>
+cd lab-borrow
+npm install
+```
+
+`npm install` reads the root `package.json` and installs everything for **both** the backend and frontend in
+one step (they're set up as npm workspaces).
+
+### 3. Start the database
+
+```bash
+docker compose up -d
+```
+
+This starts a PostgreSQL container in the background, pre-configured with the username, password, and
+database name the app expects. You can check it's running with `docker ps` — you should see a `postgres`
+container listed.
+
+### 4. Configure environment variables
+
+```bash
+cp .env.example backend/.env
+```
+
+This copies the example environment file into place. The defaults already match the database started in step
+3, so you don't need to edit anything to get running locally — but you can open `backend/.env` and change the
+`JWT_SECRET`/`ADMIN_JWT_SECRET` values if you want.
+
+### 5. Set up and seed the database
+
+```bash
+npm run db:migrate    # creates all the tables (User, Component, Rental, etc.)
+npm run db:seed       # adds a demo admin, two demo students, and four demo components
+```
+
+If `db:migrate` fails, the most common cause is Docker not actually running yet — give it a few seconds after
+`docker compose up -d` and try again.
+
+### 6. Run the app
+
+```bash
+npm run dev
+```
+
+This starts **both** servers at once: the backend API on port 4000 and the frontend on port 5173. Leave this
+running in your terminal, then open **http://localhost:5173** in your browser.
+
+### 7. Try the golden path yourself
+
+Use the two seeded student accounts below (or register your own) to walk through the full workflow the app is
+built around. Password for every seeded account is `Password123!`.
+
+| Role    | Email                | 
+| ------- | --------------------- |
+| Student | alice@college.edu     |
+| Student | bob@college.edu       |
+| Admin   | admin@labborrow.dev   |
+
+1. Open the site in one browser window and log in as **Alice**. Go to **My Components → + New listing** and
+   create something (e.g. an ESP32 board).
+2. Open a **second, separate browser window in private/incognito mode** (so it doesn't share Alice's login)
+   and log in as **Bob**.
+3. As Bob, go to **Browse**, search for the item Alice listed, open it, pick start/end dates, and click
+   **Send request**. Notice the live price preview as you pick dates.
+4. Switch back to Alice's window → **My Rentals → Requests on my items**. You'll see Bob's request with
+   **Accept**/**Reject** buttons. Click **Accept** — the rental becomes **Active**.
+5. Switch to Bob's window → **My Rentals → Requests I made**. Click **Request return**.
+6. Switch back to Alice's window and click **Confirm return**. The rental is now **Completed**, and if you go
+   back to **Browse**, the component shows **Available** again.
+
+For the admin side: log out, go to **http://localhost:5173/admin/login**, and sign in with the admin account
+above. You can view/disable users and listings from there — it's a completely separate login from the student
+app.
+
+### 8. Run the automated tests
+
+```bash
+npm test
+```
+
+What this does: it spins up a **second**, separate database (`labborrow_test`, configured in
+`backend/.env.test` so it never touches your real seeded data), runs the real Prisma migrations against it,
+then runs 32 tests that exercise the actual HTTP API end-to-end (using Supertest) against that database —
+nothing is mocked. You'll see output like this when it's done:
+
+```
+Test Suites: 4 passed, 4 total
+Tests:       32 passed, 32 total
+```
+
+Those 32 tests cover the business rules the MVP depends on: registration/login, that you can't edit someone
+else's component listing, that you can't rent your own component, that overlapping rental requests for the
+same dates are rejected, the full accept → active → return-requested → completed lifecycle, and that a
+student account is denied access to admin-only endpoints.
+
+If a test run ever fails with a connection error, make sure Docker/Postgres is still running (`docker ps`).
+
+### Troubleshooting
+
+| Problem | Fix |
+| --- | --- |
+| `docker compose up -d` errors out | Make sure Docker Desktop is open and running first. |
+| `npm run db:migrate` fails to connect | Wait a few seconds after starting Docker, then retry — Postgres takes a moment to initialize. |
+| Port 4000 or 5173 already in use | Something else on your machine is using that port; stop it, or change `PORT` in `backend/.env` / the `server.port` in `frontend/vite.config.ts`. |
+| Login doesn't seem to work / redirects to login | Make sure you're visiting the app through `http://localhost:5173` (not `4000`) — that's the Vite dev server that proxies API calls and keeps cookies working. |
+
+---
+
 ## Getting started
 
-Prerequisites: Node.js 20+, Docker (for Postgres) — or any local PostgreSQL 16 instance.
+The condensed version, if you've done this kind of setup before. Prerequisites: Node.js 20+, Docker (for
+Postgres) — or any local PostgreSQL 16 instance.
 
 ```bash
 git clone <repo-url>
