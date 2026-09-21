@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum ComponentCategory {
+  MICROCONTROLLERS
+  DEVELOPMENT_BOARDS
+  SENSORS
+  MOTORS
+  MOTOR_DRIVERS
+  POWER_SUPPLIES
+  MODULES
+  TOOLS
+  OTHER
+}
+
+enum ComponentCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  USED
+}
+
+enum ComponentAvailability {
+  AVAILABLE
+  RENTED
+  INACTIVE
+}
+
+enum RentalStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  ACTIVE
+  RETURN_REQUESTED
+  COMPLETED
+}
+
+enum ReportTargetType {
+  USER
+  COMPONENT
+}
+
+enum NotificationType {
+  RENTAL_REQUEST_RECEIVED
+  REQUEST_ACCEPTED
+  REQUEST_REJECTED
+  RETURN_REQUESTED
+  RENTAL_COMPLETED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  college      String
+  profileImage String?
+  role         Role     @default(STUDENT)
+  isDisabled   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  components       Component[]
+  rentalsAsRenter  Rental[]       @relation("RenterRentals")
+  notifications    Notification[]
+  reportsSubmitted Report[]       @relation("ReporterReports")
+
+  @@index([role])
+}
+
+model Component {
+  id              String                @id @default(cuid())
+  ownerId         String
+  owner           User                  @relation(fields: [ownerId], references: [id])
+  name            String
+  category        ComponentCategory
+  description     String
+  condition       ComponentCondition
+  dailyPrice      Decimal               @db.Decimal(10, 2)
+  securityDeposit Decimal               @db.Decimal(10, 2)
+  availability    ComponentAvailability @default(AVAILABLE)
+  isActive        Boolean               @default(true)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  images  ComponentImage[]
+  rentals Rental[]
+
+  @@index([ownerId])
+  @@index([category])
+  @@index([availability])
+  @@index([isActive])
+}
+
+model ComponentImage {
+  id          String    @id @default(cuid())
+  componentId String
+  component   Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  url         String
+  createdAt   DateTime  @default(now())
+
+  @@index([componentId])
+}
+
+model Rental {
+  id              String       @id @default(cuid())
+  componentId     String
+  component       Component    @relation(fields: [componentId], references: [id])
+  renterId        String
+  renter          User         @relation("RenterRentals", fields: [renterId], references: [id])
+  startDate       DateTime
+  endDate         DateTime
+  message         String?
+  status          RentalStatus @default(PENDING)
+  days            Int
+  rentalAmount    Decimal      @db.Decimal(10, 2)
+  securityDeposit Decimal      @db.Decimal(10, 2)
+  totalAmount     Decimal      @db.Decimal(10, 2)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  notifications Notification[]
+
+  @@index([componentId])
+  @@index([renterId])
+  @@index([status])
+}
+
+model Report {
+  id                String           @id @default(cuid())
+  reporterId        String
+  reporter          User             @relation("ReporterReports", fields: [reporterId], references: [id])
+  targetType        ReportTargetType
+  targetUserId      String?
+  targetComponentId String?
+  reason            String
+  description       String
+  createdAt         DateTime         @default(now())
+
+  @@index([targetType])
+  @@index([reporterId])
+}
+
+model Notification {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id])
+  type            NotificationType
+  message         String
+  isRead          Boolean          @default(false)
+  relatedRentalId String?
+  relatedRental   Rental?          @relation(fields: [relatedRentalId], references: [id])
+  createdAt       DateTime         @default(now())
+
+  @@index([userId])
+  @@index([userId, isRead])
+}

@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: labborrow
+      POSTGRES_PASSWORD: labborrow
+      POSTGRES_DB: labborrow
+    ports:
+      - '5432:5432'
+    volumes:
+      - lab_borrow_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U labborrow']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  lab_borrow_pg_data:

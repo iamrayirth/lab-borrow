@@ -1,0 +1,23 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.test
+*.log
+npm-debug.log*
+
+# uploads (local dev storage)
+backend/uploads/components/*
+!backend/uploads/components/.gitkeep
+
+# editor/os
+.DS_Store
+.vscode/
+.idea/
+
+# prisma
+backend/prisma/dev.db
+
+# testing
+coverage/
