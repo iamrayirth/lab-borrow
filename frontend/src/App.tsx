@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { AdminAuthProvider } from './context/AdminAuthContext';
 import { Layout } from './components/Layout';
@@ -74,6 +74,7 @@ function AdminApp() {
 }
 
 export default function App() {
-  const isAdminRoute = window.location.pathname.startsWith('/admin');
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
   return isAdminRoute ? <AdminApp /> : <StudentApp />;
 }
