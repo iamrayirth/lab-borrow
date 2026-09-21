@@ -72,7 +72,7 @@ You need three things on your computer:
 ### 2. Get the code and install dependencies
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/iamrayirth/lab-borrow
 cd lab-borrow
 npm install
 ```
